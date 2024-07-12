@@ -2,7 +2,7 @@
 from models import db,User, Category, Item, Order, Feedback
 #import os
 
-#app = Flask(__name__)
+
 #!/usr/bin/env python3
 from flask_migrate import Migrate
 from flask import Flask, request, jsonify, abort
@@ -15,10 +15,13 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os,random
 
+
+
 # Init
 app = Flask(__name__)
 api=Api(app)
 CORS(app)
+
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATABASE_URI = os.environ.get("DB_URI", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}")
@@ -82,7 +85,7 @@ def get_current_user():
     current_user = User.query.get(current_user_id)
 
     if current_user:
-        return jsonify({"id":current_user.id, "name":current_user.username, "email":current_user.email}), 200
+        return jsonify({"id":current_user.id, "username":current_user.username, "email":current_user.email}), 200
     else:
         jsonify({"error":"User not found"}), 404
 
@@ -93,7 +96,7 @@ def get_users():
     users = User.query.all()
     user_list =[]
     for user in users:
-        user_list.append({"id": user.id, "name": user.username, "email": user.email})
+        user_list.append({"id": user.id, "username": user.username, "email": user.email, "location": user.location, "bio":user.bio})
 
     return jsonify(user_list),200
 
@@ -103,7 +106,7 @@ def get_items():
     items = Item.query.all()
     item_list =[]
     for item in items:
-        item_list.append({"id": item.id, "name": item.title, "description": item.description, "price": item.price, "category id":item.category_id, "image link": item.imageurl})
+        item_list.append({"id": item.id, "title": item.title, "description": item.description, "price": item.price, "category_id":item.category_id, "imageurl": item.imageurl})
 
     return jsonify(item_list),200
 
@@ -123,7 +126,7 @@ def get_feedbacks():
     feedbacks = Feedback.query.all()
     feedback_list =[]
     for feedback in feedbacks:
-        feedback_list.append({"id": feedback.id, "name": feedback.name, "email": feedback.email, "feedback": feedback.feedback, "item bought": feedback.item_id})
+        feedback_list.append({"id": feedback.id, "name": feedback.name, "email": feedback.email, "feedback": feedback.feedback, "item_id": feedback.item_id})
 
     return jsonify(feedback_list),200
 
@@ -133,11 +136,11 @@ def get_orders():
     orders = Order.query.all()
     order_list =[]
     for order in orders:
-        order_list.append({"id": order.id, "quantity": order.quantity, "status": order.status, "user": order.user_id})
+        order_list.append({"id": order.id, "quantity": order.quantity, "status": order.status, "user_id": order.user_id})
 
     return jsonify(order_list),200
 
-#Add items
+#Add items to the db
 @app.route('/additems', methods=['POST'])
 def add_item():
     data = request.get_json()
@@ -152,13 +155,50 @@ def add_item():
     db.session.commit()
     return item_schema.jsonify(new_item)
 
-@app.route('/api/items/<int:id>', methods=['GET'])
-def get_item(id):
-    item = Item.query.get_or_404(id)
-    return item_schema.jsonify(item)
+#Add user to the db / sign up
+@app.route('/signup', methods=['POST'])
+def add_user():
+    data = request.get_json()
+    new_user = User(
+        username=data['username'],
+        email=data['email'],
+        password= bcrypt.generate_password_hash(data['password']).decode('utf-8'),
+        location=data['location'],
+        bio=data['bio']
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    return item_schema.jsonify(new_user)
 
+#Add feedback
+@app.route('/addfeedbacks', methods=['POST'])
+def add_feedback():
+    data = request.get_json()
+    new_feedback = Feedback(
+        email=data['email'],
+        name=data['name'],
+        feedback=data['feedback'],
+        item_id=data['item_id']
+    )
+    db.session.add(new_feedback)
+    db.session.commit()
+    return item_schema.jsonify(new_feedback)
 
-@app.route('/api/items/<int:id>', methods=['PUT'])
+#Add order
+@app.route('/addorders', methods=['POST'])
+def add_order():
+    data = request.get_json()
+    new_order = Order(
+        quantity=data['quantity'],
+        status=data['status'],
+        user_id=data['user_id']
+    )
+    db.session.add(new_order)
+    db.session.commit()
+    return item_schema.jsonify(new_order)
+
+#Updates an item
+@app.route('/updateitems/<int:id>', methods=['PUT'])
 def update_item(id):
     item = Item.query.get_or_404(id)
     data = request.get_json()
@@ -170,10 +210,32 @@ def update_item(id):
     db.session.commit()
     return item_schema.jsonify(item)
 
-@app.route('/api/items/<int:id>', methods=['DELETE'])
+#Updates a user
+@app.route('/updateusers/<int:id>', methods=['PUT'])
+def update_user(id):
+    user = User.query.get_or_404(id)
+    data = request.get_json()
+    user.username = data.get('username', user.username)
+    user.email = data.get('email', user.email)
+    user.location = data.get('location', user.location)
+    user.bio = data.get('bio', user.bio)
+    db.session.commit()
+    return item_schema.jsonify(user)
+
+
+#Deletes an item by its id
+@app.route('/deleteitems/<int:id>', methods=['DELETE'])
 def delete_item(id):
     item = Item.query.get_or_404(id)
     db.session.delete(item)
+    db.session.commit()
+    return '', 204
+
+#Deletes a user by its id
+@app.route('/deleteusers/<int:id>', methods=['DELETE'])
+def delete_user(id):
+    user = User.query.get_or_404(id)
+    db.session.delete(user)
     db.session.commit()
     return '', 204
 
