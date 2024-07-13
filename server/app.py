@@ -71,15 +71,15 @@ def login():
     return jsonify({"message": "Invalid email or password"}), 401
 
 # Get current user
-@app.route("/current_user", methods=["GET"])
+@app.route('/current_user', methods=['GET'])
 @jwt_required()
 def get_current_user():
     current_user_id = get_jwt_identity()
     current_user = User.query.get(current_user_id)
-
     if current_user:
-        return user_schema.jsonify(current_user)
-    return jsonify({"error": "User not found"}), 404
+        return jsonify({'email': current_user.email, 'name': current_user.name}), 200
+    else:
+        return jsonify({'message': 'User not found'}), 404
 
 # Get all users
 @app.route('/users', methods=['GET'])
@@ -128,18 +128,18 @@ def add_item():
 
 # Add user to the db / sign up
 @app.route('/signup', methods=['POST'])
-def add_user():
+def signup():
     data = request.get_json()
-    new_user = User(
-        username=data['username'],
-        email=data['email'],
-        password=bcrypt.generate_password_hash(data['password']).decode('utf-8'),
-        location=data['location'],
-        bio=data['bio']
-    )
-    db.session.add(new_user)
-    db.session.commit()
-    return user_schema.jsonify(new_user), 201
+    hashed_password = bcrypt.generate_password_hash(data['password'], method='sha256')
+    new_user = User(email=data['email'], password=hashed_password, name=data['name'])
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'User created successfully'}), 201
+    except:
+        return jsonify({'message': 'User already exists'}), 409
+    
+
 
 # Add feedback
 @app.route('/addfeedbacks', methods=['POST'])
