@@ -24,8 +24,8 @@ class User(db.Model):
     username = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(100), nullable=False)
-    bio = db.Column(db.String(350), nullable=False)
+    location = db.Column(db.String(100))
+    bio = db.Column(db.String(350))
 
     # One to many with the order
     orders = db.relationship('Order', back_populates="user", cascade="all, delete-orphan")
