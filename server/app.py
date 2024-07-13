@@ -54,21 +54,19 @@ users_schema = UserSchema(many=True)
 feedback_schema = FeedbackSchema()
 feedbacks_schema = FeedbackSchema(many=True)
 
-# Login endpoint for both users and coaches
-@app.route("/login", methods=["POST"])
+# Login endpoint 
+@app.route('/login', methods=['POST'])
 def login():
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
+    data = request.get_json()
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'message': 'Invalid input'}), 400
 
-    if email is None:
-        return jsonify({"message": "Email is required"}), 400
-
-    user = User.query.filter_by(email=email).first()
-    if user and bcrypt.check_password_hash(user.password, password):
+    user = User.query.filter_by(email=data['email']).first()
+    if user and bcrypt.check_password_hashcheck_password_hash(user.password, data['password']):
         access_token = create_access_token(identity=user.id)
-        return jsonify({"access_token": access_token})
-
-    return jsonify({"message": "Invalid email or password"}), 401
+        return jsonify({'token': access_token}), 200
+    else:
+        return jsonify({'message': 'Invalid credentials'}), 401
 
 # Get current user
 @app.route('/current_user', methods=['GET'])
@@ -130,14 +128,19 @@ def add_item():
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'message': 'Invalid input'}), 400
+
     hashed_password = bcrypt.generate_password_hash(data['password'], method='sha256')
     new_user = User(email=data['email'], password=hashed_password, name=data['name'])
+
     try:
         db.session.add(new_user)
         db.session.commit()
         return jsonify({'message': 'User created successfully'}), 201
-    except:
-        return jsonify({'message': 'User already exists'}), 409
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'User already exists', 'error': str(e)}), 409
     
 
 
