@@ -62,20 +62,24 @@ def login():
         return jsonify({'message': 'Invalid input'}), 400
 
     user = User.query.filter_by(email=data['email']).first()
-    if user and bcrypt.check_password_hashcheck_password_hash(user.password, data['password']):
+    if user and check_password_hash(user.password, data['password']):
         access_token = create_access_token(identity=user.id)
         return jsonify({'token': access_token}), 200
     else:
         return jsonify({'message': 'Invalid credentials'}), 401
 
-# Get current user
 @app.route('/current_user', methods=['GET'])
 @jwt_required()
 def get_current_user():
     current_user_id = get_jwt_identity()
     current_user = User.query.get(current_user_id)
     if current_user:
-        return jsonify({'email': current_user.email, 'name': current_user.name}), 200
+        return jsonify({
+            'email': current_user.email,
+            'name': current_user.name,
+            'location': current_user.location,
+            'bio': current_user.bio
+        }), 200
     else:
         return jsonify({'message': 'User not found'}), 404
 
@@ -131,8 +135,14 @@ def signup():
     if not data or not data.get('email') or not data.get('password'):
         return jsonify({'message': 'Invalid input'}), 400
 
-    hashed_password = bcrypt.generate_password_hash(data['password'], method='sha256')
-    new_user = User(email=data['email'], password=hashed_password, name=data['name'])
+    hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+    new_user = User(
+        email=data['email'],
+        password=hashed_password,
+        name=data.get('name'),
+        location=data.get('location'),
+        bio=data.get('bio')
+    )
 
     try:
         db.session.add(new_user)
@@ -140,7 +150,8 @@ def signup():
         return jsonify({'message': 'User created successfully'}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'message': 'User already exists', 'error': str(e)}), 409
+        return jsonify({'message': 'User already exists or other error', 'error': str(e)}), 409
+
     
 
 
@@ -169,14 +180,25 @@ def add_feedback():
 @app.route('/addorders', methods=['POST'])
 def add_order():
     data = request.get_json()
+    # Create a new Order instance
     new_order = Order(
-        quantity=data['quantity'],
-        status=data['status'],
-        user_id=data['user_id']
+        title=data['title'],
+        description=data['description'],
+        price=data['price'],
+        imageurl=data['imageurl'],
+        category_id=data['category_id']
     )
+
+    # Add items to the order if provided
+    if 'item_ids' in data:
+        items = Item.query.filter(Item.id.in_(data['item_ids'])).all()
+        new_order.items.extend(items)
+
+    # Add the new order to the session and commit
     db.session.add(new_order)
     db.session.commit()
-    return item_schema.jsonify(new_order), 201
+
+    return jsonify(new_order.to_dict()), 201
 
 # Update an item
 @app.route('/updateitems/<int:id>', methods=['PUT'])

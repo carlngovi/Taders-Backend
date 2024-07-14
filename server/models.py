@@ -24,11 +24,9 @@ class User(db.Model):
     username = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(100))
-    bio = db.Column(db.String(350))
+    location = db.Column(db.String(100), nullable=True)
+    bio = db.Column(db.String(350), nullable=True)
 
-    # One to many with the order
-    orders = db.relationship('Order', back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f'<User {self.username}, {self.email}, {self.password}, {self.location}, {self.bio}>'
@@ -51,6 +49,9 @@ class Category(db.Model):
     # One to many with the item
     items = db.relationship('Item', back_populates="category", cascade="all, delete-orphan")
 
+    # One to many with the order
+    orders = db.relationship('Order', back_populates="category", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f'<Category {self.id}, {self.name}>'
 
@@ -70,7 +71,7 @@ class Item(db.Model):
     imageurl = db.Column(db.String, nullable=False)
 
     # One to many with the feedbacks
-    feedbacks = db.relationship('Feedback', back_populates="items", cascade="all, delete-orphan")
+    feedbacks = db.relationship('Feedback', back_populates="item", cascade="all, delete-orphan")
 
     # Foreign key to store the category id
     category_id = db.Column(db.Integer, db.ForeignKey('categorys.id'))
@@ -97,25 +98,29 @@ class Order(db.Model):
     __tablename__ = "orders"
 
     id = db.Column(db.Integer, primary_key=True)
-    quantity = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String, nullable=False)
+    title = db.Column(db.String, nullable=False)
+    description = db.Column(db.String, nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    imageurl = db.Column(db.String, nullable=False)
 
-    # Foreign key to store the user's id
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    # Relationship mapping the order to the user
-    user = db.relationship('User', back_populates="orders")
+
     # Relationship mapping item to related order
     items = db.relationship('Item', secondary=item_order, back_populates='orders')
+    # Foreign key to store the category id
+    category_id = db.Column(db.Integer, db.ForeignKey('categorys.id'))
+    # Relationship mapping the order to the category
+    category = db.relationship('Category', back_populates="orders")
 
     def __repr__(self):
-        return f'<Order {self.id}, {self.quantity}, {self.status}>'
+        return f'<Order {self.id}, {self.title}, {self.description}, {self.price}, {self.imageurl}>'
 
     def to_dict(self):
         return {
             "id": self.id,
-            "quantity": self.quantity,
-            "status": self.status,
-            "user_id": self.user_id,
+            "title": self.title,
+            "description": self.description,
+            "price": self.price,
+            "imageurl": self.imageurl,
         }
 
 class Feedback(db.Model):
@@ -129,7 +134,7 @@ class Feedback(db.Model):
     # Foreign key to store the item id
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'))
     # Relationship mapping the item to the feedback
-    items = db.relationship('Item', back_populates="feedbacks")
+    item = db.relationship('Item', back_populates="feedbacks")
 
     def __repr__(self):
         return f'<Feedback {self.id}, {self.email}, {self.name}, {self.feedback}>'

@@ -137,16 +137,24 @@ def seed_feedback(items):
     db.session.commit()
     return feedbacks
 
-def seed_orders(users, items):
+def seed_orders(users, items, categories):
     orders = []
     for _ in range(10):  # Adjust the range as needed
-        order = {
-            'quantity': choice(range(1, 10)),  # Example: Random quantity between 1 and 9
-            'status': 'pending',  # Default status
-            'user_id': choice(users).id,  # Random user ID from users
-            # Include other necessary fields here
-        }
+        order = Order(
+            title=f"Order Title {_}",
+            description=f"Order Description {_}",
+            price=randint(10, 100),  # Example: Random price between 10 and 100
+            imageurl=f"http://example.com/image{_}.jpg",
+            category_id=choice(categories).id  # Random category ID from categories
+        )
+         # Add random items to the order
+        order_items = [choice(items) for _ in range(randint(1, 5))]  # Randomly pick 1 to 5 items
+        order.items.extend(order_items)
         orders.append(order)
+    # Add orders to the session and commit
+    db.session.add_all(orders)
+    db.session.commit()
+
 
 
 def seed_all():
