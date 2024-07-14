@@ -111,7 +111,17 @@ def get_feedbacks():
 @app.route('/orders', methods=['GET'])
 def get_orders():
     orders = Order.query.all()
-    return jsonify([{"id": order.id, "quantity": order.quantity, "status": order.status, "user_id": order.user_id} for order in orders]), 200
+    return jsonify([
+        {
+            "id": order.id,
+            "title": order.title,
+            "description": order.description,
+            "price": order.price,
+            "imageurl": order.imageurl,
+            "category_id": order.category_id
+        } for order in orders
+    ]), 200
+
 
 # Add items to the db
 @app.route('/additems', methods=['POST'])
