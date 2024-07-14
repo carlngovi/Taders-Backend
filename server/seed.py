@@ -139,7 +139,7 @@ def seed_feedback(items):
 
 def seed_orders(users, items, categories):
     orders = []
-    for _ in range(20):  # Create 20 orders
+    for _ in range(0):  # Create 20 orders
         user = choice(users)
         item = choice(items)
         category = choice(categories)
