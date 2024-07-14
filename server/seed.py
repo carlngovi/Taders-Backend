@@ -139,22 +139,26 @@ def seed_feedback(items):
 
 def seed_orders(users, items, categories):
     orders = []
-    for _ in range(10):  # Adjust the range as needed
-        order = Order(
-            title=f"Order Title {_}",
-            description=f"Order Description {_}",
-            price=randint(10, 100),  # Example: Random price between 10 and 100
-            imageurl=f"http://example.com/image{_}.jpg",
-            category_id=choice(categories).id  # Random category ID from categories
-        )
-         # Add random items to the order
-        order_items = [choice(items) for _ in range(randint(1, 5))]  # Randomly pick 1 to 5 items
-        order.items.extend(order_items)
-        orders.append(order)
-    # Add orders to the session and commit
-    db.session.add_all(orders)
-    db.session.commit()
+    for _ in range(20):  # Create 20 orders
+        user = choice(users)
+        item = choice(items)
+        category = choice(categories)
+        quantity = randint(1, 5)
+        status = choice(['Pending', 'Shipped', 'Delivered', 'Cancelled'])
 
+        # Create the order with required fields
+        order = Order(
+            title=item.title,
+            description=item.description,
+            price=item.price * quantity,  # Total price based on quantity
+            imageurl=item.imageurl,
+            category_id=category.id
+        )
+
+        orders.append(order)
+        db.session.add(order)
+    db.session.commit()
+    return orders
 
 
 def seed_all():
@@ -166,7 +170,7 @@ def seed_all():
         categories = seed_categories()
         items = seed_items(categories)
         feedbacks = seed_feedback(items)
-        orders = seed_orders(users, items)
+        orders = seed_orders(users, items, categories)
         
         print("Seeding complete!")
 
