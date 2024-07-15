@@ -72,17 +72,23 @@ def login():
 @app.route('/current_user', methods=['GET'])
 @jwt_required()
 def get_current_user():
-    current_user_id = get_jwt_identity()
-    current_user = User.query.get(current_user_id)
-    if current_user:
-        return jsonify({
-            'email': current_user.email,
-            'name': current_user.name,
-            'location': current_user.location,
-            'bio': current_user.bio
-        }), 200
-    else:
-        return jsonify({'message': 'User not found'}), 404
+    try:
+        current_user_id = get_jwt_identity()
+        current_user = User.query.get(current_user_id)
+        
+        if current_user:
+            return jsonify({
+                'email': current_user.email,
+                'name': current_user.name,
+                'location': current_user.location,
+                'bio': current_user.bio
+            }), 200
+        else:
+            return jsonify({'message': 'User not found'}), 404
+
+    except Exception as e:
+        return jsonify({'message': 'Internal server error', 'error': str(e)}), 500
+
 
 # Get all users
 @app.route('/users', methods=['GET'])
