@@ -164,13 +164,20 @@ def signup():
     try:
         db.session.add(new_user)
         db.session.commit()
-        return jsonify({'message': 'User created successfully'}), 201
+        
+        # Return the newly created user data
+        user_data = {
+            'id': new_user.id,
+            'email': new_user.email,
+            'username': new_user.username,
+            'location': new_user.location,
+            'bio': new_user.bio
+        }
+        return jsonify({'message': 'User created successfully', 'user': user_data}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'User already exists or other error', 'error': str(e)}), 409
 
-
-    
 
 
 # Add feedback
