@@ -196,7 +196,6 @@ def add_order():
         description=data['description'],
         price=data['price'],
         imageurl=data['imageurl'],
-        category_id=data['category_id']
     )
 
     # Add items to the order if provided
