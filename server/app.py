@@ -79,7 +79,7 @@ def get_current_user():
         if current_user:
             return jsonify({
                 'email': current_user.email,
-                'name': current_user.name,
+                'name': current_user.username,
                 'location': current_user.location,
                 'bio': current_user.bio
             }), 200
