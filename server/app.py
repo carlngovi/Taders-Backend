@@ -14,7 +14,6 @@ app = Flask(__name__)
 api = Api(app)
 CORS(app)
 
-
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATABASE_URI = os.environ.get("DB_URI", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}")
 
@@ -56,6 +55,7 @@ feedback_schema = FeedbackSchema()
 feedbacks_schema = FeedbackSchema(many=True)
 
 # Login endpoint 
+# Login endpoint 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -63,7 +63,7 @@ def login():
         return jsonify({'message': 'Invalid input'}), 400
 
     user = User.query.filter_by(email=data['email']).first()
-    if user and check_password_hash(user.password, data['password']):
+    if user and bcrypt.check_password_hash(user.password, data['password']):
         access_token = create_access_token(identity=user.id)
         return jsonify({'token': access_token}), 200
     else:
@@ -143,35 +143,26 @@ def add_item():
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'message': 'Invalid input'}), 400
 
-    if not data:
-        return jsonify({'message': 'No data provided'}), 400
-
-    email = data.get('email')
-    password = data.get('password')
-
-    if not email or not password:
-        return jsonify({'message': 'Email and password are required'}), 400
-
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
     new_user = User(
-        email=email,
+        email=data['email'],
         password=hashed_password,
-        username=data.get('name')
+        name=data.get('name'),
+        location=data.get('location'),
+        bio=data.get('bio')
     )
 
     try:
-        # Check if the user already exists
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            return jsonify({'message': 'User already exists'}), 409
-
         db.session.add(new_user)
         db.session.commit()
         return jsonify({'message': 'User created successfully'}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'message': 'An error occurred', 'error': str(e)}), 500
+        return jsonify({'message': 'User already exists or other error', 'error': str(e)}), 409
+
     
 
 
@@ -206,6 +197,7 @@ def add_order():
         description=data['description'],
         price=data['price'],
         imageurl=data['imageurl'],
+        category_id=data['category_id']
     )
 
     # Add items to the order if provided
