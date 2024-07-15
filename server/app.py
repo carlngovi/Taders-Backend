@@ -156,7 +156,7 @@ def signup():
     new_user = User(
         email=data['email'],
         password=hashed_password,
-        name=data.get('name'),
+        username=data.get('username'),
         location=data.get('location'),
         bio=data.get('bio')
     )
