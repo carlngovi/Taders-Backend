@@ -149,14 +149,14 @@ def add_item():
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
-    if not data or not data.get('email') or not data.get('password'):
+    if not data or not data.get('email') or not data.get('password') or not data.get('name'):
         return jsonify({'message': 'Invalid input'}), 400
 
     hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
     new_user = User(
         email=data['email'],
         password=hashed_password,
-        username=data.get('username'),
+        username=data['name'],  # Map 'name' from frontend to 'username' in the database
         location=data.get('location'),
         bio=data.get('bio')
     )
@@ -168,6 +168,7 @@ def signup():
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'User already exists or other error', 'error': str(e)}), 409
+
 
     
 
