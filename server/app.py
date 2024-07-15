@@ -14,6 +14,7 @@ app = Flask(__name__)
 api = Api(app)
 CORS(app)
 
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATABASE_URI = os.environ.get("DB_URI", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}")
 
@@ -142,26 +143,35 @@ def add_item():
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
-    if not data or not data.get('email') or not data.get('password'):
-        return jsonify({'message': 'Invalid input'}), 400
 
-    hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+    if not data:
+        return jsonify({'message': 'No data provided'}), 400
+
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({'message': 'Email and password are required'}), 400
+
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     new_user = User(
-        email=data['email'],
+        email=email,
         password=hashed_password,
-        name=data.get('name'),
-        location=data.get('location'),
-        bio=data.get('bio')
+        username=data.get('name')
     )
 
     try:
+        # Check if the user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({'message': 'User already exists'}), 409
+
         db.session.add(new_user)
         db.session.commit()
         return jsonify({'message': 'User created successfully'}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'message': 'User already exists or other error', 'error': str(e)}), 409
-
+        return jsonify({'message': 'An error occurred', 'error': str(e)}), 500
     
 
 
